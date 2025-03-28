@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MIDI Polyphonic Synth</title>
+    <script src="synth.js" type="module"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Polyphony with MIDI!</h1>
+
+    <p><strong>0b</strong> prefix indicates binary</p>
+    <p><strong>0x</strong> prefix indicates hexadecimal</p>
+
+    <h2>Hex, Decimal, and Binary Reference</h2>
+    <table>
+        <tr>
+            <th>Hex</th>
+            <th>Decimal</th>
+            <th>Binary (4 bits)</th>
+        </tr>
+        <tr><td>0x<strong>0</strong></td><td><strong>0</strong></td><td>0b<strong>0000</strong></td></tr>
+        <tr><td>0x<strong>1</strong></td><td><strong>1</strong></td><td>0b<strong>0001</strong></td></tr>
+        <tr><td>0x<strong>2</strong></td><td><strong>2</strong></td><td>0b<strong>0010</strong></td></tr>
+        <tr><td>0x<strong>3</strong></td><td><strong>3</strong></td><td>0b<strong>0011</strong></td></tr>
+        <tr><td>0x<strong>4</strong></td><td><strong>4</strong></td><td>0b<strong>0100</strong></td></tr>
+        <tr><td>0x<strong>5</strong></td><td><strong>5</strong></td><td>0b<strong>0101</strong></td></tr>
+        <tr><td>0x<strong>6</strong></td><td><strong>6</strong></td><td>0b<strong>0110</strong></td></tr>
+        <tr><td>0x<strong>7</strong></td><td><strong>7</strong></td><td>0b<strong>0111</strong></td></tr>
+        <tr><td>0x<strong>8</strong></td><td><strong>8</strong></td><td>0b<strong>1000</strong></td></tr>
+        <tr><td>0x<strong>9</strong></td><td><strong>9</strong></td><td>0b<strong>1001</strong></td></tr>
+        <tr><td>0x<strong>A</strong></td><td><strong>10</strong></td><td>0b<strong>1010</strong></td></tr>
+        <tr><td>0x<strong>B</strong></td><td><strong>11</strong></td><td>0b<strong>1011</strong></td></tr>
+        <tr><td>0x<strong>C</strong></td><td><strong>12</strong></td><td>0b<strong>1100</strong></td></tr>
+        <tr><td>0x<strong>D</strong></td><td><strong>13</strong></td><td>0b<strong>1101</strong></td></tr>
+        <tr><td>0x<strong>E</strong></td><td><strong>14</strong></td><td>0b<strong>1110</strong></td></tr>
+        <tr><td>0x<strong>F</strong></td><td><strong>15</strong></td><td>0b<strong>1111</strong></td></tr>
+    </table>
+
+    <hr>
+
+    <h2>Bitwise AND <code>(&)</code> Operator</h2>
+
+    <p>
+        The bitwise AND operator compares each bit of two numbers and returns <code>1</code> only if both bits are <code>1</code>. It's very useful when we want to isolate certain bits in a number.
+    </p>
+
+    <table>
+        <tr>
+            <th>Value A</th>
+            <th>Value B</th>
+            <th>Result</th>
+        </tr>
+        <tr>
+            <td><code>0b11001100</code></td>
+            <td><code>0b11110000</code></td>
+            <td><code>0b11000000</code></td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h2>Using Bitwise AND to Parse MIDI Status Bytes</h2>
+
+    <p>A MIDI <strong>status byte</strong> contains two pieces of information:</p>
+    <ul>
+        <li>The command type (in the upper 4 bits)</li>
+        <li>The MIDI channel (in the lower 4 bits)</li>
+    </ul>
+
+    <p>To extract just the <strong>command type</strong>:</p>
+    <code>let command = statusByte & 0xF0;</code>
+
+    <p>This keeps the upper 4 bits and sets the lower 4 bits to <code>0</code>.</p>
+
+    <p>To extract just the <strong>channel number</strong>:</p>
+    <code>let channel = statusByte & 0x0F;</code>
+
+    <p>This keeps the lower 4 bits and clears the upper bits.</p>
+
+    <h3>Example</h3>
+    <p>Suppose the status byte is <code>0x91</code> (binary: <code>10010001</code>):</p>
+    <ul>
+        <li><code>0x91 & 0xF0 = 0x90</code> → Note On command</li>
+        <li><code>0x91 & 0x0F = 0x01</code> → Channel 1</li>
+    </ul>
+
+    <hr>
+
+    <h2>MIDI Command Summary</h2>
+
+    <table>
+        <tr>
+            <th>Hex</th>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Data Bytes</th>
+        </tr>
+        <tr>
+            <td>0x80</td>
+            <td>Note Off</td>
+            <td>Turn a note off</td>
+            <td>Note Number, Velocity</td>
+        </tr>
+        <tr>
+            <td>0x90</td>
+            <td>Note On</td>
+            <td>Turn a note on</td>
+            <td>Note Number, Velocity</td>
+        </tr>
+        <tr>
+            <td>0xA0</td>
+            <td>Polyphonic Aftertouch</td>
+            <td>Pressure for individual note</td>
+            <td>Note Number, Pressure</td>
+        </tr>
+        <tr>
+            <td>0xB0</td>
+            <td>Control Change</td>
+            <td>Change controller value</td>
+            <td>Controller Number, Value</td>
+        </tr>
+        <tr>
+            <td>0xC0</td>
+            <td>Program Change</td>
+            <td>Change instrument patch</td>
+            <td>Program Number</td>
+        </tr>
+        <tr>
+            <td>0xD0</td>
+            <td>Channel Aftertouch</td>
+            <td>Pressure for entire channel</td>
+            <td>Pressure</td>
+        </tr>
+        <tr>
+            <td>0xE0</td>
+            <td>Pitch Bend</td>
+            <td>Change pitch bend</td>
+            <td>LSB, MSB (14-bit value)</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h2>Why Bitwise AND Helps Us Avoid Repetition</h2>
+
+    <p>
+        When reading MIDI data, you might receive any one of the 16 possible "Note On" messages (from <code>0x90</code> to <code>0x9F</code>).
+        If we didn't use bitwise logic, you'd need to check all of them separately:
+    </p>
+
+    <code>
+        if (statusByte === 144 || statusByte === 145 || statusByte === 146 || ... || statusByte === 159) { /* handle it */ }
+    </code>
+
+    <p>
+        That's clunky and error-prone. Instead, we can use a bitwise AND:
+    </p>
+
+    <code>
+        if ((statusByte & 0xF0) === 0x90) { /* Note On! */ }
+    </code>
+
+    <p>
+        This works because <code>0xF0</code> masks out the channel bits (the lower 4) and leaves just the command type.
+        It's faster, cleaner, and much easier to read — and it works for any MIDI channel command!
+    </p>
+
+</body>
+</html>
