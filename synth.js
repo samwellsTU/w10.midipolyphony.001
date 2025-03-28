@@ -39,7 +39,12 @@ const mtof = function (midi) {
  */
 const startNote = function (note) {
   if (!activeVoices[note]) {
-    let someVoice = new Voice(mySynthCtx, mtof(note),Math.random(), masterGain);
+    let someVoice = new Voice(
+      mySynthCtx,
+      mtof(note),
+      Math.random(),
+      masterGain
+    );
     activeVoices[note] = someVoice;
     activeVoices[note].start(); //someVoice.start()
     console.log(activeVoices);
@@ -59,48 +64,36 @@ const stopNote = function (note) {
   }
 };
 
-/**
- * @constant {Object} noteMap
- * @description Maps keyboard keys to MIDI note numbers.
- */
-const noteMap = {
-  a: 60, // C4
-  w: 61, // C#4 / Db4
-  s: 62, // D4
-  e: 63, // D#4 / Eb4
-  d: 64, // E4
-  f: 65, // F4
-  t: 66, // F#4 / Gb4
-  g: 67, // G4
-  y: 68, // G#4 / Ab4
-  h: 69, // A4 (440 Hz)
-  u: 70, // A#4 / Bb4
-  j: 71, // B4
-  k: 72, // C5
-  o: 73, // C#5 / Db5
-  l: 74, // D5
-  p: 75, // D#5 / Eb5
-  ";": 76, // E5
+const midiParser = function (midiEvent) {
+  let statusByte = midiEvent.data[0];
+  let command = statusByte & 0xf0; //0b11110000;
+  // console.log(command);
+  let channel = statusByte & 0xf; //0b00001111;
+
+  switch (command) {
+    case 0x90:
+      if (midiEvent.data[2] > 0) {
+        startNote(midiEvent.data[1]);
+      } else {
+        stopNote(midiEvent.data[1]);
+      }
+
+      break;
+    case 0x80:
+      console.log("noteOff");
+
+      break;
+    case 0xb0:
+      console.log("CC");
+      break;
+  }
 };
 
-/**
- * @event keydown
- * @description Listens for keydown events and starts a note if the key is mapped.
- */
-document.addEventListener("keydown", (e) => {
-  if (noteMap[e.key]) {
-    startNote(noteMap[e.key]);
+const onMIDIsuccess = function (midiInfo) {
+  // console.log(midiInfo.inputs.values());
+  for (let myMidiIn of midiInfo.inputs.values()) {
+    myMidiIn.onmidimessage = midiParser;
   }
-});
+};
 
-/**
- * @event keyup
- * @description Listens for keyup events and stops a note if the key is mapped.
- */
-document.addEventListener("keyup", (e) => {
-  if (noteMap[e.key]) {
-    stopNote(noteMap[e.key]);
-  }
-});
-
-// let someNewSpecialVoice = new Voice(mySynthCtx, 440, masterGain);
+navigator.requestMIDIAccess().then(onMIDIsuccess);
