@@ -37,13 +37,16 @@ const mtof = function (midi) {
  * @description Starts a note by creating and storing a new Voice instance.
  * @param {number} note - The MIDI note number.
  */
-const startNote = function (note) {
+const startNote = function (note, velocity) {
+  let noteAmp = velocity / 127;
+  noteAmp = Math.pow(noteAmp, 3);
+
   if (!activeVoices[note]) {
     let someVoice = new Voice(
-      mySynthCtx,
-      mtof(note),
-      Math.random(),
-      masterGain
+      mySynthCtx, //audio context
+      mtof(note), //converted midi note to freqency
+      noteAmp, //some randome value (0.-1) for max Amplitude
+      masterGain //output node to connect to
     );
     activeVoices[note] = someVoice;
     activeVoices[note].start(); //someVoice.start()
@@ -66,25 +69,67 @@ const stopNote = function (note) {
 
 const midiParser = function (midiEvent) {
   let statusByte = midiEvent.data[0];
+  // if (statusByte != 248) {
+  //   console.log(midiEvent.data);
+  // }
   let command = statusByte & 0xf0; //0b11110000;
   // console.log(command);
   let channel = statusByte & 0xf; //0b00001111;
+  let data1;
+  let data2;
 
-  switch (command) {
+  switch (
+    command //Parse different types of MIDI messages by Command
+  ) {
+    //-------------------------Note Off Messages------------------------------
+    case 0x80:
+      console.log("noteOff", midiEvent.data[1], midiEvent.data[2]);
+      data1 = midiEvent.data[1]; //note number
+      data2 = midiEvent.data[2]; //velocity
+
+      stopNote(noteNum);
+      break;
+    //-------------------------------Note ON-----------------------------------
     case 0x90:
-      if (midiEvent.data[2] > 0) {
-        startNote(midiEvent.data[1]);
+      data1 = midiEvent.data[1]; //note number
+      data2 = midiEvent.data[2]; //velocity
+
+      console.log("noteON", data1, data2);
+
+      //check if velocity is not zero
+      if (data2 > 0) {
+        startNote(data1, data2);
       } else {
-        stopNote(midiEvent.data[1]);
+        stopNote(data1);
       }
 
       break;
-    case 0x80:
-      console.log("noteOff");
 
+    //-------------------------------Polyphonic Aftertouch---------------------
+    case 0xa0:
+      console.log("PolyAftertouch", midiEvent.data[1], midiEvent.data[2]);
       break;
+    //-----------------------------control change---------------------------
     case 0xb0:
-      console.log("CC");
+      console.log("CC", midiEvent.data[1], midiEvent.data[2]);
+      if (midiEvent.data[1] == 79) {
+        masterGain.gain.linearRampToValueAtTime(
+          midiEvent.data[2] / 127,
+          mySynthCtx.currentTime + 0.2
+        );
+      }
+      break;
+    //-----------------------------program change---------------------------
+    case 0xc0:
+      console.log("Program Change", midiEvent.data[1], midiEvent.data[2]);
+      break;
+    //-----------------------------channel aftertouch change---------------------------
+    case 0xd0:
+      console.log("Channel Aftertouch", midiEvent.data[1], midiEvent.data[2]);
+      break;
+
+    case 0xe0:
+      console.log("PitchBend", midiEvent.data[1], midiEvent.data[2]);
       break;
   }
 };
