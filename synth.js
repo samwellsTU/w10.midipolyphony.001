@@ -19,8 +19,15 @@ const activeVoices = {};
 const masterGain = mySynthCtx.createGain();
 masterGain.gain.value = 0.125; // Set master volume
 
+//add filter
+const lpFilter = mySynthCtx.createBiquadFilter();
+lpFilter.type = "lowpass";
+lpFilter.frequency.value = 1000;
+lpFilter.Q.value = 20;
+
 // Connect master gain to the audio output
-masterGain.connect(mySynthCtx.destination);
+masterGain.connect(lpFilter);
+lpFilter.connect(mySynthCtx.destination);
 
 /**
  * @function mtof
@@ -64,6 +71,26 @@ const stopNote = function (note) {
     activeVoices[note].stop();
     delete activeVoices[note];
     console.log(activeVoices);
+  }
+};
+
+const midiCC = function (ccNum, val) {
+  switch (ccNum) {
+    case 79:
+      masterGain.gain.linearRampToValueAtTime(
+        val / 127,
+        mySynthCtx.currentTime + 0.2
+      );
+      break;
+    case 78:
+      lpFilter.frequency.linearRampToValueAtTime(
+        val * 20,
+        mySynthCtx.currentTime + 0.02
+      );
+      break;
+
+    case 77:
+      break;
   }
 };
 
@@ -111,13 +138,7 @@ const midiParser = function (midiEvent) {
       break;
     //-----------------------------control change---------------------------
     case 0xb0:
-      console.log("CC", midiEvent.data[1], midiEvent.data[2]);
-      if (midiEvent.data[1] == 79) {
-        masterGain.gain.linearRampToValueAtTime(
-          midiEvent.data[2] / 127,
-          mySynthCtx.currentTime + 0.2
-        );
-      }
+      midiCC(midiEvent.data[1], midiEvent.data[2]);
       break;
     //-----------------------------program change---------------------------
     case 0xc0:
